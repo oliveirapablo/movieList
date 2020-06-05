@@ -18,6 +18,7 @@ import {
   Image,
   TouchableHighlight,
   Modal,
+  FlatList,
 } from 'react-native';
 
 import {
@@ -31,10 +32,13 @@ import {
 const App: () => React$Node = () => {
   const apiUrl = 'http://www.omdbapi.com/?apikey=b577e7a5';
   const [state, setState] = useState({
-    s: 'Escolher um filme...',
+    s: '',
     results: [],
     selected: {},
   });
+  const [modalVisible, setModalVisible] = useState(false);
+
+  const [myMovies, setMyMovies] = useState([]);
 
   const search = () => {
     axios(apiUrl + '&s=' + state.s).then(({data}) => {
@@ -56,9 +60,28 @@ const App: () => React$Node = () => {
     });
   };
 
+  const saveMovie = (id) => {
+    axios(apiUrl + '&i=' + id).then(({data}) => {
+      let result = data;
+      console.log('MY MOVIES', myMovies);
+      setMyMovies([...myMovies, data]);
+    });
+  };
+
+  function deleteMovie(id) {
+    setMyMovies((movie) => movie.filter((item) => item.imdbID !== id));
+  }
+
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Lista de Filmes</Text>
+      <TouchableHighlight
+        style={styles.openButton}
+        onPress={() => {
+          setModalVisible(true);
+        }}>
+        <Text style={styles.textStyle}>Minha Lista</Text>
+      </TouchableHighlight>
       <TextInput
         style={styles.seachBox}
         onChangeText={(text) =>
@@ -92,11 +115,26 @@ const App: () => React$Node = () => {
         visible={typeof state.selected.Title !== 'undefined'}>
         <View style={styles.popup}>
           <Text style={styles.poptitle}>{state.selected.Title}</Text>
+          <Image
+            source={{uri: state.selected.Poster}}
+            style={styles.image}
+            resizeMode="cover"
+          />
           <Text style={{marginBottom: 20}}>
             Avaliaçao: {state.selected.imdbRating}
           </Text>
           <Text>{state.selected.Plot}</Text>
         </View>
+        {/* {myMovies && myMovies.filter((item) => item.imdbID === state.imdbID) && (
+          <TouchableHighlight
+            style={{...styles.openButton, backgroundColor: '#E02041'}}
+            onPress={() => {
+              setModalVisible(!modalVisible);
+            }}>
+            <Text style={styles.textStyle}>Deletar</Text>
+          </TouchableHighlight>
+        )} */}
+
         <TouchableHighlight
           onPress={() =>
             setState((prevState) => {
@@ -104,6 +142,42 @@ const App: () => React$Node = () => {
             })
           }>
           <Text style={styles.cloneBtn}>Fechar</Text>
+        </TouchableHighlight>
+        <TouchableHighlight onPress={() => saveMovie(state.selected.imdbID)}>
+          <Text style={styles.saveBtn}>Salvar</Text>
+        </TouchableHighlight>
+      </Modal>
+
+      <Modal animationType="fade" transparent={false} visible={modalVisible}>
+        <View style={styles.popup}>
+          {console.log(myMovies)}
+
+          <FlatList
+            data={myMovies}
+            renderItem={({item}) => (
+              <TouchableHighlight
+                key={item.imdbID}
+                onPress={() => openPopup(item.imdbID)}>
+                <View style={styles.popup}>
+                  <Text style={styles.poptitle}>{item.Title}</Text>
+                  <Image
+                    source={{uri: item.Poster}}
+                    style={styles.image}
+                    resizeMode="cover"
+                  />
+                </View>
+              </TouchableHighlight>
+            )}
+            keyExtractor={() => String(Math.random())}
+          />
+        </View>
+
+        <TouchableHighlight
+          style={{...styles.openButton, backgroundColor: '#2196F3'}}
+          onPress={() => {
+            setModalVisible(!modalVisible);
+          }}>
+          <Text style={styles.textStyle}>Fechar</Text>
         </TouchableHighlight>
       </Modal>
     </View>
@@ -162,11 +236,44 @@ const styles = StyleSheet.create({
     marginBottom: 5,
   },
   cloneBtn: {
-    padding: 20,
+    padding: 10,
     color: '#FFF',
     fontSize: 20,
     fontWeight: '700',
     backgroundColor: '#2484C4',
+    width: 200,
+    height: 50,
+    marginLeft: 100,
+    borderRadius: 20,
+  },
+  saveBtn: {
+    padding: 10,
+    color: '#FFF',
+    fontSize: 20,
+    fontWeight: '700',
+    backgroundColor: '#77DD77',
+    width: 200,
+    height: 50,
+    marginTop: 10,
+    marginLeft: 100,
+
+    borderRadius: 20,
+  },
+  textStyle: {
+    color: 'white',
+    fontWeight: 'bold',
+    textAlign: 'center',
+  },
+  openButton: {
+    backgroundColor: '#77D7',
+    borderRadius: 20,
+    padding: 10,
+    elevation: 2,
+    marginBottom: 10,
+  },
+  Myresults: {
+    flex: 1,
+    backgroundColor: '#6653',
   },
 });
 
